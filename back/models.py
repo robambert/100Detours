@@ -9,12 +9,25 @@ from main import db
 from passlib.hash import pbkdf2_sha256 as sha256
 
 
+class PlanningModel:
+    def __init__(self, database):
+        self.db=database
+        
+    def insert(self, planning):
+        self.db.insert_one(planning)
+        
+    def get_user_planning(self, user_id):
+        return list(self.db.find({"_id" : user_id}))
+    
+
+
 class UserModel(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(120), unique = True, nullable = False)
     password = db.Column(db.String(120), nullable = False)
+    usertype = db.Column(db.Integer, default=1) # 0 pour l'admin, 1 pour les infirmiers
     
     @classmethod
     def return_all(cls):

@@ -27,14 +27,15 @@ class UserPlanning(Resource):
 
 class UserRegistration(Resource):
     def post(self):
-        data = parser.parse_args()
+        data = loginparser.parse_args()
         
         if UserModel.find_by_username(data['username']):
             return {'message': 'User {} already exists'.format(data['username'])}
         
         new_user = UserModel(
             username = data['username'],
-            password = UserModel.generate_hash(data['password'])
+            password = UserModel.generate_hash(data['password']),
+            usertype = 0
         )
         
         try:
