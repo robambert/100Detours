@@ -46,7 +46,9 @@ api.add_resource(resources.UserLogoutAccess, '/logout/access')
 api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
 api.add_resource(resources.TokenRefresh, '/token/refresh')
 api.add_resource(resources.AllUsers, '/users')
-api.add_resource(resources.SecretResource, '/secret')
+api.add_resource(resources.UserPlanning, '/planning')
+api.add_resource(resources.InfirmierAdder, 'manage/add')# page pour ajouter des infirmiers
+
 
 app.run(debug=True)
 
