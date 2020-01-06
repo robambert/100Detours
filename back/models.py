@@ -5,7 +5,6 @@ Created on Mon Dec  2 16:35:01 2019
 @author: simed
 """
 
-from main import db
 from passlib.hash import pbkdf2_sha256 as sha256
 
 
@@ -21,23 +20,11 @@ class PlanningModel:
     
 
 
-class UserModel(db.Model):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key = True)
-    username = db.Column(db.String(120), unique = True, nullable = False)
-    password = db.Column(db.String(120), nullable = False)
-    usertype = db.Column(db.Integer, default=1) # 0 pour l'admin, 1 pour les infirmiers
+class MongoUserModel:
     
-    @classmethod
-    def return_all(cls):
-        def to_json(x):
-            return {
-                'username': x.username,
-                'password': x.password
-            }
-        return {'users': list(map(lambda x: to_json(x), UserModel.query.all()))}
-    
+    def __init__(self, database):
+        self.db=database
+        
     @staticmethod
     def generate_hash(password):
         return sha256.hash(password)
@@ -46,36 +33,28 @@ class UserModel(db.Model):
     def verify_hash(password, hash):
         return sha256.verify(password, hash)
 
-    @classmethod
-    def delete_all(cls):
-        try:
-            num_rows_deleted = db.session.query(cls).delete()
-            db.session.commit()
-            return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
-        except:
-            return {'message': 'Something went wrong'}
         
     @classmethod
-    def find_by_username(cls, username):
-       return cls.query.filter_by(username = username).first()
+    def find_by_username(self, username):
+       return list(self.db.find({'username' : username}))
     
     
-    def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
+    def insert(self, user):
+        self.db.insert_one(user)
         
-class RevokedTokenModel(db.Model):
-    __tablename__ = 'revoked_tokens'
-    id = db.Column(db.Integer, primary_key = True)
-    jti = db.Column(db.String(120))
+
+        
+class RevokedTokenModel:
     
-    def add(self):
-        db.session.add(self)
-        db.session.commit()
+    def __init__(self, database):
+        self.db = database
     
-    @classmethod
-    def is_jti_blacklisted(cls, jti):
-        query = cls.query.filter_by(jti = jti).first()
-        return bool(query)
+    def insert(self, token):
+        self.db.insert_one(token)
+    
+    def is_jti_blacklisted(self, jti):
+        number = self.db.find({'token' : jti}).count()
+        
+        return True if number !=0 else False
     
 
