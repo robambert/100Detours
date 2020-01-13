@@ -28,7 +28,7 @@ class UserRegistration(Resource):
     def post(self):
         data = loginparser.parse_args()
         
-        if db_user.find({'username' : data.username}):
+        if db_user.find({'username': data.username}).count() > 0:
             return {'message': 'User {} already exists'.format(data['username'])}
         
         new_user = {'username' : data.username, 'password' : MongoUserModel.generate_hash(data['password'])}
