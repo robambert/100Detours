@@ -1,0 +1,36 @@
+version: '3.3'
+services:
+  # Database
+  mongodb:
+      image: mongo:latest
+      network_mode: "bridge"
+      restart: always
+      environment:
+          - MONGO_INITDB_DATABASE=admin
+      volumes:
+      - data-volume:/data/db
+      ports:
+        - "27017:27017"
+  
+  mongo-express:
+      image: mongo-express
+      restart: always
+      network_mode: "bridge"
+      ports:
+        - 8081:8081
+      environment:
+        - ME_CONFIG_BASICAUTH_USERNAME=root
+        - ME_CONFIG_BASICAUTH_PASSWORD=nooneknows
+        - ME_CONFIG_MONGODB_PORT=27017
+        - ME_CONFIG_OPTIONS_EDITORTHEME=ambiance
+        - ME_CONFIG_MONGODB_SERVER=mongo
+        - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+      depends_on:
+        - mongodb
+      links:
+        - "mongodb:mongo"
+
+volumes:
+  data-volume:
+
+
