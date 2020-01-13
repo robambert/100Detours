@@ -8,22 +8,32 @@ Created on Mon Dec  2 16:35:01 2019
 from passlib.hash import pbkdf2_sha256 as sha256
 
 
-class PlanningModel:
+class MongodbManager:
     def __init__(self, database):
         self.db=database
         
-    def insert(self, planning):
-        self.db.insert_one(planning)
+    def find_by_id(self, id_):
+        return list(self.db.find({'_id' : id_}))
+    
+    def insert(self, content):
+        self.db.insert_one(content)
+
+class PlanningModel(MongodbManager):
+    def __init__(self, database):
+        super.__init__(self, database)
         
-    def get_user_planning(self, user_id):
-        return list(self.db.find({"_id" : user_id}))
+    def find_by_username(self, username):
+        result=list(self.db.find({"username" : username}))
+        if len(result) == 0:
+            return None
+        return result[0]
     
 
 
-class MongoUserModel:
+class UserModel(MongodbManager):
     
     def __init__(self, database):
-        self.db=database
+        super.__init__(self, database)
         
     @staticmethod
     def generate_hash(password):
@@ -36,21 +46,27 @@ class MongoUserModel:
         
     @classmethod
     def find_by_username(self, username):
-       return list(self.db.find({'username' : username}))
+        result=list(self.db.find({"username" : username}))
+        if len(result) == 0:
+            return None
+        return result[0]
     
-    
-    def insert(self, user):
-        self.db.insert_one(user)
+        
+class NursesModel:
+    def __init__(self, database):
+        super.__init__(self, database)
         
 
         
-class RevokedTokenModel:
-    
+class PatientModel:
     def __init__(self, database):
-        self.db = database
-    
-    def insert(self, token):
-        self.db.insert_one(token)
+        super.__init__(self, database)
+        
+
+        
+class RevokedTokenModel(MongodbManager):
+    def __init__(self, database):
+        super.__init__(self, database)
     
     def is_jti_blacklisted(self, jti):
         number = self.db.find({'token' : jti}).count()

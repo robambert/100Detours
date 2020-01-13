@@ -8,12 +8,12 @@ Created on Mon Dec  2 16:35:08 2019
 
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-from main import db_planning, db_user
+from main import db_planning, db_user, db_revoked_tokens
 loginparser = reqparse.RequestParser()
 loginparser.add_argument('username', help = 'This field cannot be blank', required = True)
 loginparser.add_argument('password', help = 'This field cannot be blank', required = True)
 
-from models import RevokedTokenModel, MongoUserModel
+from models import RevokedTokenModel,UserModel
 
 class UserPlanning(Resource):
     @jwt_required
@@ -28,13 +28,12 @@ class UserRegistration(Resource):
     def post(self):
         data = loginparser.parse_args()
         
-        if db_user.find({'username' : data.username}):
+        if db_user.find_by_username(data['username']):
             return {'message': 'User {} already exists'.format(data['username'])}
-        
-        new_user = {'username' : data.username, 'password' : MongoUserModel.generate_hash(data['password'])}
+        new_user = {'username' : data['username'], 'password' : UserModel.generate_hash(data['password'])}
 
         try:
-            db_user.insert_one(new_user)
+            db_user.insert(new_user)
             return {
                 'message': 'User {} was created'.format(data['username'])
                 }
@@ -45,12 +44,10 @@ class UserRegistration(Resource):
 class UserLogin(Resource):
     def post(self):
         data = loginparser.parse_args()
-        current_user = list(db_user.find({'username' : data['username']}))[0]
-
+        current_user= db_user.find_by_username(data['username'])
         if not current_user:
             return {'message': 'User {} doesn\'t exist'.format(data['username'])}
-        
-        if MongoUserModel.verify_hash(data['password'], current_user['password']):
+        if UserModel.verify_hash(data['password'], current_user['password']):
             access_token = create_access_token(identity = data['username'])
             refresh_token = create_refresh_token(identity = data['username'])
             return {
@@ -67,8 +64,7 @@ class UserLogoutAccess(Resource):
     def post(self):
         jti = get_raw_jwt()['jti']
         try:
-            revoked_token = RevokedTokenModel(jti = jti)
-            revoked_token.add()
+            db_revoked_tokens
             return {'message': 'Access token has been revoked'}
         except:
             return {'message': 'Something went wrong'}, 500
@@ -79,8 +75,7 @@ class UserLogoutRefresh(Resource):
     def post(self):
         jti = get_raw_jwt()['jti']
         try:
-            revoked_token = RevokedTokenModel(jti = jti)
-            revoked_token.add()
+            db_revoked_tokens.insert({'token' : jti})
             return {'message': 'Refresh token has been revoked'}
         except:
             return {'message': 'Something went wrong'}, 500
@@ -94,35 +89,24 @@ class TokenRefresh(Resource):
         return {'access_token': access_token}
       
       
-class AllUsers(Resource):
-    def get(self):
-        return UserModel.return_all()
-    
-    def delete(self):
-        return UserModel.delete_all()
-      
-      
+"""     
 class InfirmierAdder(Resource):
     """
-    Idem au login, mais se fais ici une fois connecté, pour ajouter de nouveaux infirmiers(usertype = 1)
+    #Idem au login, mais se fais ici une fois connecté, pour ajouter de nouveaux infirmiers(usertype = 1)
     
-    il faut surement créer une nouvelle table infirmiers, pour placer les données perso de l'infirmiers crée
-    actuellement, seule son nom de compte/mot de passe ( provisoire, choisi par le manager ou généré aléatoirement) sont exigés.'
+    #il faut surement créer une nouvelle table infirmiers, pour placer les données perso de l'infirmiers crée
+    #actuellement, seule son nom de compte/mot de passe ( provisoire, choisi par le manager ou généré aléatoirement) sont exigés.'
     """
     @jwt_required
     def post(self):
         username = get_jwt_identity()
-        current_user = UserModel.find_by_username(username)
-        if current_user.usertype == 1:
-            return {'message' : 'Acces denied'}, 500
+        current_user = db_user.find({'username' : username})[0]
+#        if current_user.usertype == 1:
+#            return {'message' : 'Acces denied'}, 500
         data=loginparser.parse_args()
-        new_user = UserModel(
-            username = data['username'],
-            password = UserModel.generate_hash(data['password']),
-            usertype = 1
-        )
+        new_user = {'username' : data['username'], 'password' : MongoUserModel.generate_hash(data['password'])}
         try:
-            new_user.save_to_db()
+            db_user.insert_one(new_user)
             return {
                 'message': 'User {} was created'.format(data['username'])
                 }, 200
@@ -130,9 +114,9 @@ class InfirmierAdder(Resource):
             return {'message': 'Something went wrong'}, 500
     def get(self):
         username = get_jwt_identity()
-        current_user = UserModel.find_by_username(username)
+        current_user = db_user.find({'username' : username})[0]
         if current_user.usertype == 1:
             return {'message' : 'Acces denied'}, 500
         #html_page=get_html_page()# ENcore une fois fonction a coder, lien avec le front
         #return render_template(html_page)
-        
+"""     
