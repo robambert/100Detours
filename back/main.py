@@ -18,10 +18,13 @@ app.config['JWT_SECRET_KEY'] = 'EBJOHD065EHE7ELEO'
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 jwt = JWTManager(app)
-db=pymongo.MongoClient('mongodb://localhost:27017')["mongo"]
 
+db=pymongo.MongoClient('mongodb://localhost:27017')["mongo"]
 db_planning=db.planning
 db_user=db.users
+if db_user.count() ==0:
+    db_user.insert_one({'username' : 'admin', 'password' : '$pbkdf2-sha256$29000$vldKKQXAmDOG0Pq/l5JSCg$kCw9QC8i5.rutQNl6dFTTFhLEx3cC/sjO6XhCYDaUMQ'})
+
 db_revoked_tokens=db.tokens
 
 
